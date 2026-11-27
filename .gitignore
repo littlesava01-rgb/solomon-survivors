@@ -29,3 +29,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Промежуточные артефакты генерации (исходные сетки можно не хранить)
+art/preview_all.png

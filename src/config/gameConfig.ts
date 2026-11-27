@@ -15,9 +15,14 @@ export const WORLD = {
 /** Параметры Соломона. */
 export const PLAYER = {
   speed: 150, // px/сек
-  maxHp: 10,
+  // 20 HP: ранние враги бьют по 3-5, поэтому терпеть можно четыре
+  // попадания подряд, а не два. С 10 HP игрок умирал за две секунды
+  // от толпы тетрадей.
+  maxHp: 20,
   pickupRange: 60,
   magnetRange: 80,
+  // Неуязвимость после удара: без неё касание врага наносит урон
+  // каждый кадр.
   invincibilityMs: 800,
   spriteScale: 0.22, // 300x340 -> ~66x76
 } as const;
@@ -27,7 +32,9 @@ export const SPAWN = {
   intervalStartMs: 2000,
   intervalMinMs: 300,
   intervalDecreasePerMinuteMs: 50,
-  radius: 600, // за пределами экрана
+  // Радиус спавна — чуть за пределами экрана. Слишком большой: оружие
+  // не долетает до первых врагов, и начало забега проходит впустую.
+  radius: 420,
   maxEnemies: 150,
   despawnDistance: 1200,
 } as const;

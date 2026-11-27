@@ -6,6 +6,8 @@ import { CAMERA, PALETTE } from './config/gameConfig';
 import { BootScene } from './scenes/BootScene';
 import { MenuScene } from './scenes/MenuScene';
 import { GameScene } from './scenes/GameScene';
+import { LevelUpScene } from './scenes/LevelUpScene';
+import { GameOverScene } from './scenes/GameOverScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -34,7 +36,7 @@ const config: Phaser.Types.Core.GameConfig = {
     activePointers: 3,
     keyboard: true,
   },
-  scene: [BootScene, MenuScene, GameScene],
+  scene: [BootScene, MenuScene, GameScene, LevelUpScene, GameOverScene],
 };
 
 const game = new Phaser.Game(config);

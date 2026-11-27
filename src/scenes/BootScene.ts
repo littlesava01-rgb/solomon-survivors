@@ -1,13 +1,12 @@
 /**
  * Загрузка ресурсов и подготовка текстур.
  *
- * На этой стапе загружаются только те ассеты, которые уже существуют:
- * 110 иконок, 3 позы Соломона и один фон-панорама для меню.
- * Спрайты врагов и оружия появятся в src/assets/ после генерации
- * (см. docs/АНАЛИЗ-РЕСУРСОВ.md, раздел 4).
+ * Грузим: 110 иконок интерфейса, 3 позы Соломона, спрайты врагов/оружия
+ * (art/sprites/) и один фон-панорама для меню.
  */
 import Phaser from 'phaser';
 import { ICONS } from '../assets/icons';
+import { SPRITES } from '../assets/sprites';
 import poseWink from '../../Assets/solomon/pose-wink.png';
 import poseHello from '../../Assets/solomon/pose-hello.png';
 import poseIdle from '../../Assets/solomon/pose-idle.png';
@@ -25,6 +24,9 @@ export class BootScene extends Phaser.Scene {
     this.load.image('bg-university', bgUniversity);
 
     for (const [name, url] of Object.entries(ICONS)) {
+      this.load.image(name, url);
+    }
+    for (const [name, url] of Object.entries(SPRITES)) {
       this.load.image(name, url);
     }
   }
