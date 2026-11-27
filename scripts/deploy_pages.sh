@@ -31,7 +31,9 @@ rm -rf "$WORKTREE"
 git worktree add --detach "$WORKTREE" >/dev/null
 
 cd "$WORKTREE"
-git checkout --orphan "$BRANCH" 2>/dev/null
+# Ветка-сирота с уникальным именем: локальная gh-pages уже может существовать,
+# и checkout --orphan с её именем падал бы с ошибкой.
+git checkout --orphan "deploy-tmp-$$" 2>/dev/null
 git rm -rf --cached . -q 2>/dev/null || true
 # Чистим рабочее дерево worktree — основной проект не затрагивается
 find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
@@ -44,11 +46,12 @@ touch .nojekyll
 echo "==> Коммит и пуш"
 git add -A
 git commit -q -m "deploy: обновление GitHub Pages" || echo "    (изменений нет — пропускаем коммит)"
-git push --force origin "$BRANCH"
+git push --force origin "HEAD:refs/heads/$BRANCH"
 
 cd ..
-git worktree remove --force "$WORKTREE"
+git worktree remove --force "$WORKTREE" 2>/dev/null || true
 rm -rf "$WORKTREE"
+git worktree prune
 
 echo
 echo "Готово: https://${OWNER}.github.io/${NAME}/"

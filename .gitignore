@@ -9,6 +9,7 @@ dist-ssr/
 coverage/
 test-results/
 playwright-report/
+.deploy_worktree/
 
 # Логи
 npm-debug.log*
