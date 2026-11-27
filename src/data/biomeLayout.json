@@ -1,7 +1,7 @@
 {
   "worldWidth": 4000,
   "worldHeight": 4000,
-  "tileScale": 1.6,
+  "tileScale": 1.0,
   "zones": [
     {
       "biome": "street",
@@ -60,116 +60,60 @@
   ],
   "blends": [
     {
-      "file": "blend-x-street-old-town-0.webp",
+      "file": "blend-x-street-old-town.webp",
       "axis": "x",
-      "x": 1143.3333333333333,
+      "x": 1073.3333333333333,
       "y": 0.0,
-      "width": 380,
+      "width": 520,
       "height": 2000.0
     },
     {
-      "file": "blend-x-old-town-street-1.webp",
+      "file": "blend-x-old-town-dorm.webp",
       "axis": "x",
-      "x": 1143.3333333333333,
+      "x": 2406.6666666666665,
       "y": 0.0,
-      "width": 380,
+      "width": 520,
       "height": 2000.0
     },
     {
-      "file": "blend-x-old-town-dorm-0.webp",
+      "file": "blend-x-corridor-park.webp",
       "axis": "x",
-      "x": 2476.6666666666665,
-      "y": 0.0,
-      "width": 380,
-      "height": 2000.0
-    },
-    {
-      "file": "blend-x-dorm-old-town-1.webp",
-      "axis": "x",
-      "x": 2476.6666666666665,
-      "y": 0.0,
-      "width": 380,
-      "height": 2000.0
-    },
-    {
-      "file": "blend-x-corridor-park-0.webp",
-      "axis": "x",
-      "x": 1143.3333333333333,
+      "x": 1073.3333333333333,
       "y": 2000.0,
-      "width": 380,
+      "width": 520,
       "height": 2000.0
     },
     {
-      "file": "blend-x-park-corridor-1.webp",
+      "file": "blend-x-park-path.webp",
       "axis": "x",
-      "x": 1143.3333333333333,
+      "x": 2406.6666666666665,
       "y": 2000.0,
-      "width": 380,
+      "width": 520,
       "height": 2000.0
     },
     {
-      "file": "blend-x-park-path-0.webp",
-      "axis": "x",
-      "x": 2476.6666666666665,
-      "y": 2000.0,
-      "width": 380,
-      "height": 2000.0
-    },
-    {
-      "file": "blend-x-path-park-1.webp",
-      "axis": "x",
-      "x": 2476.6666666666665,
-      "y": 2000.0,
-      "width": 380,
-      "height": 2000.0
-    },
-    {
-      "file": "blend-y-street-corridor-0.webp",
+      "file": "blend-y-street-corridor.webp",
       "axis": "y",
       "x": 0.0,
-      "y": 1810.0,
+      "y": 1740.0,
       "width": 1333.3333333333333,
-      "height": 380
+      "height": 520
     },
     {
-      "file": "blend-y-corridor-street-1.webp",
-      "axis": "y",
-      "x": 0.0,
-      "y": 1810.0,
-      "width": 1333.3333333333333,
-      "height": 380
-    },
-    {
-      "file": "blend-y-old-town-park-0.webp",
+      "file": "blend-y-old-town-park.webp",
       "axis": "y",
       "x": 1333.3333333333333,
-      "y": 1810.0,
+      "y": 1740.0,
       "width": 1333.3333333333333,
-      "height": 380
+      "height": 520
     },
     {
-      "file": "blend-y-park-old-town-1.webp",
-      "axis": "y",
-      "x": 1333.3333333333333,
-      "y": 1810.0,
-      "width": 1333.3333333333333,
-      "height": 380
-    },
-    {
-      "file": "blend-y-dorm-path-0.webp",
+      "file": "blend-y-dorm-path.webp",
       "axis": "y",
       "x": 2666.6666666666665,
-      "y": 1810.0,
+      "y": 1740.0,
       "width": 1333.3333333333333,
-      "height": 380
-    },
-    {
-      "file": "blend-y-path-dorm-1.webp",
-      "axis": "y",
-      "x": 2666.6666666666665,
-      "y": 1810.0,
-      "width": 1333.3333333333333,
-      "height": 380
+      "height": 520
     }
   ]
 }

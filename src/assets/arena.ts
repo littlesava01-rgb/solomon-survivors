@@ -1,19 +1,23 @@
 /**
  * Реестр текстур пола и декора арены.
  *
- * Пол (src/assets/floors/) — бесшовные тайлы 256x256, собранные из
- * четвертей листа зеркалированием (scripts/cut_floors.py).
+ * Пол (src/assets/floors/) — бесшовные тайлы 1024x1024 в WebP.
+ * Собираются зеркалированием целой ячейки: швов не бывает по
+ * построению (см. scripts/cut_floors.py). Тайл показан в мире без
+ * масштабирования, поэтому период повтора равен ширине экрана и
+ * фактура не читается как обои.
+ *
  * Декор (src/assets/props/) — предметы видом сверху (scripts/gen_props.py).
  *
  * Импортируются статически, чтобы Vite положил их в бандл.
  */
 
-import floorLinoleum from './floors/linoleum.png';
-import floorSnowAsphalt from './floors/snow-asphalt.png';
-import floorSnowCobble from './floors/snow-cobble.png';
-import floorSnowGrass from './floors/snow-grass.png';
-import floorSnowPath from './floors/snow-path.png';
-import floorWoodFloor from './floors/wood-floor.png';
+import linoleum from './floors/linoleum.webp';
+import snowAsphalt from './floors/snow-asphalt.webp';
+import snowCobble from './floors/snow-cobble.webp';
+import snowGrass from './floors/snow-grass.webp';
+import snowPath from './floors/snow-path.webp';
+import woodFloor from './floors/wood-floor.webp';
 
 import propBin from './props/prop-bin.png';
 import propBollard from './props/prop-bollard.png';
@@ -26,21 +30,14 @@ import propSnowpile from './props/prop-snowpile.png';
 import propTree from './props/prop-tree.png';
 
 export const FLOORS = {
-  'floor-snow-asphalt': floorSnowAsphalt,
-  'floor-snow-cobble': floorSnowCobble,
-  'floor-wood-floor': floorWoodFloor,
-  'floor-linoleum': floorLinoleum,
-  'floor-snow-grass': floorSnowGrass,
-  'floor-snow-path': floorSnowPath,
+  'floor-snow-asphalt': snowAsphalt,
+  'floor-snow-cobble': snowCobble,
+  'floor-wood-floor': woodFloor,
+  'floor-linoleum': linoleum,
+  'floor-snow-grass': snowGrass,
+  'floor-snow-path': snowPath,
 } as const;
 
-/**
- * Декор арены.
- *
- * Только те виды, что получились видом строго сверху. Лавка, забор
- * и указатель вышли во фронтальном виде и в бесшовном сверху мире
- * смотрелись бы чужеродно — их нет в списке.
- */
 export const PROPS = {
   'prop-lamp': propLamp,
   'prop-bin': propBin,

@@ -18,7 +18,7 @@
 2. Фаза текстуры. Тайлспрайт зоны начинается от левого верхнего угла
    зоны, поэтому в любой точке мира текстура имеет своё смещение.
    Чтобы полоса совпала с обоими тайлами, фаза считается в мировых
-   координатах.
+   координатах, а сэмплится именно финальный тайл (зеркальный).
 
 3. Оттенок и затенение зоны. Оттенок рисуется поверх пола с
    полупрозрачностью, значит в полосе перехода он тоже должен
@@ -43,9 +43,9 @@ LAYOUT_JSON = os.path.join(ROOT, "src", "data", "biomeLayout.json")
 
 WORLD = 4000
 COLS, ROWS = 3, 2
-TILE_PX = 256          # размер текстуры пола в пикселях
-TILE_SCALE = 1.6       # во сколько раз тайл показан в мире (см. ArenaRenderer)
-BLEND_WORLD = 190      # ширина переходной полосы в мировых пикселях (в каждую сторону)
+TILE_PX = 1024         # размер текстуры пола в пикселях (см. cut_floors.py)
+TILE_SCALE = 1.0       # во сколько раз тайл показан в мире (см. ArenaRenderer)
+BLEND_WORLD = 260      # ширина переходной полосы в мировых пикселях (в каждую сторону)
 TINT_ALPHA = 0.32      # полупрозрачность оттенка зоны (см. ArenaRenderer)
 
 # Порядок биомов по зонам: 3 колонки x 2 ряда. Должен совпадать
@@ -57,16 +57,23 @@ ZONE_ORDER = [
 
 # id -> (файл текстуры, оттенок, затемнение)
 BIOMES = {
-    "street":   ("snow-asphalt.png", 0xdce6f2, 0.00),
-    "old-town": ("snow-cobble.png",  0xe4dcd0, 0.06),
-    "dorm":     ("wood-floor.png",   0xf3ddc0, 0.12),
-    "corridor": ("linoleum.png",     0xd8e4e0, 0.16),
-    "park":     ("snow-grass.png",   0xd9e6d8, 0.04),
-    "path":     ("snow-path.png",    0xeef2f7, 0.02),
+    "street":   ("snow-asphalt.webp", 0xdce6f2, 0.00),
+    "old-town": ("snow-cobble.webp",  0xe4dcd0, 0.06),
+    "dorm":     ("wood-floor.webp",   0xf3ddc0, 0.12),
+    "corridor": ("linoleum.webp",     0xd8e4e0, 0.16),
+    "park":     ("snow-grass.webp",   0xd9e6d8, 0.04),
+    "path":     ("snow-path.webp",    0xeef2f7, 0.02),
 }
 
 
 def load_floors():
+    """Загружает ФИНАЛЬНЫЕ тайлы пола.
+
+    Важно: берём именно те тайлы, которые показывает игра
+    (src/assets/floors/*.webp), а не исходные ячейки листа. Тайлы
+    зеркальные, и если смешивать исходники, полоса перехода не
+    совпадёт с полом по краям — шов вернётся.
+    """
     floors = {}
     for biome, (fname, _tint, _dark) in BIOMES.items():
         img = Image.open(os.path.join(FLOOR_DIR, fname)).convert("RGB")
@@ -207,21 +214,20 @@ def main():
             a_tx = (world_x0 - a["x"]) / TILE_SCALE
             b_tx = (world_x0 - b["x"]) / TILE_SCALE
 
-            for order in (0, 1):
-                first, second = (a, b) if order == 0 else (b, a)
-                f_tex = (a_tx, 0) if order == 0 else (b_tx, 0)
-                s_tex = (b_tx, 0) if order == 0 else (a_tx, 0)
-                emit(
-                    f"blend-x-{first['biome']}-{second['biome']}-{order}.webp",
-                    first, second, "x",
-                    {
-                        "a_tex": f_tex, "b_tex": s_tex,
-                        "width": strip_w, "height": strip_h,
-                        "x": world_x0, "y": a["y"],
-                        "world_width": 2 * BLEND_WORLD,
-                        "world_height": a["height"],
-                    },
-                )
+            # Ровно одна полоса на стык: слева текстура зоны A,
+            # справа зоны B. Обратного варианта не нужно — иначе две
+            # полосы лягут друг на друга и верхняя перемешает не то.
+            emit(
+                f"blend-x-{a['biome']}-{b['biome']}.webp",
+                a, b, "x",
+                {
+                    "a_tex": (a_tx, 0), "b_tex": (b_tx, 0),
+                    "width": strip_w, "height": strip_h,
+                    "x": world_x0, "y": a["y"],
+                    "world_width": 2 * BLEND_WORLD,
+                    "world_height": a["height"],
+                },
+            )
 
     # --- Горизонтальные стыки: зоны сверху и снизу ---
     for row in range(ROWS - 1):
@@ -238,21 +244,18 @@ def main():
             a_ty = (world_y0 - a["y"]) / TILE_SCALE
             b_ty = (world_y0 - b["y"]) / TILE_SCALE
 
-            for order in (0, 1):
-                first, second = (a, b) if order == 0 else (b, a)
-                f_tex = (0, a_ty) if order == 0 else (0, b_ty)
-                s_tex = (0, b_ty) if order == 0 else (0, a_ty)
-                emit(
-                    f"blend-y-{first['biome']}-{second['biome']}-{order}.webp",
-                    first, second, "y",
-                    {
-                        "a_tex": f_tex, "b_tex": s_tex,
-                        "width": strip_w, "height": strip_h,
-                        "x": a["x"], "y": world_y0,
-                        "world_width": a["width"],
-                        "world_height": 2 * BLEND_WORLD,
-                    },
-                )
+            # Только один вариант: сверху текстура зоны A, снизу B.
+            emit(
+                f"blend-y-{a['biome']}-{b['biome']}.webp",
+                a, b, "y",
+                {
+                    "a_tex": (0, a_ty), "b_tex": (0, b_ty),
+                    "width": strip_w, "height": strip_h,
+                    "x": a["x"], "y": world_y0,
+                    "world_width": a["width"],
+                    "world_height": 2 * BLEND_WORLD,
+                },
+            )
 
     layout = {
         "worldWidth": WORLD,
