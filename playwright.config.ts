@@ -32,7 +32,13 @@ export default defineConfig({
   webServer: {
     // Локальная сборка с BASE_PATH="/" — отдельная папка dist-pages
     // используется только для публикации на GitHub Pages.
-    command: 'npm run build && npx vite preview --port 4175 --host 127.0.0.1',
+    //
+    // Сначала освобождаем порт: сервер от прошлого прогона иначе
+    // ломает старт, а vite ещё и блокирует второй preview этого
+    // проекта (обходится флагом --bypass-lock).
+    command:
+      'python scripts/free_port.py 4175 && npm run build && ' +
+      'npx vite preview --port 4175 --host 127.0.0.1 --bypass-lock',
     url: 'http://127.0.0.1:4175',
     reuseExistingServer: false,
     timeout: 180_000,

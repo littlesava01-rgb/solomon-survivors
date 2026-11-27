@@ -112,9 +112,33 @@ export class SpawnManager {
     };
   }
 
-  /** Босс, которого пора выпустить — для крупного эффекта появления. */
-  pendingBoss(elapsedMs: number): BossDef | null {
-    return dueBoss(elapsedMs, this.spawnedBosses);
+  /**
+   * Спавн конкретного врага в конкретной точке.
+   *
+   * Используется для боссов (появляются по расписанию, а не по таймеру)
+   * и в тестах.
+   */
+  spawnSpecific(
+    def: EnemyDef,
+    x: number,
+    y: number,
+    hpMultiplier = 1,
+    speedMultiplier = 1
+  ): SpawnDecision {
+    this.totalSpawned += 1;
+    return { def, x, y, hpMultiplier, speedMultiplier };
+  }
+
+  /**
+   * Босс, которого пора выпустить — для крупного эффекта появления.
+   *
+   * Помечает босса как выпущенного, иначе он будет спавниться
+   * каждый кадр.
+   */
+  claimBoss(elapsedMs: number): BossDef | null {
+    const boss = dueBoss(elapsedMs, this.spawnedBosses);
+    if (boss) this.spawnedBosses.add(boss.id);
+    return boss;
   }
 
   reset(): void {

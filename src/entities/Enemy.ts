@@ -25,6 +25,9 @@ export interface EnemyState {
   chargeDy: number;
   /** Таймер между выстрелами (shooter). */
   shootTimer: number;
+  /** Куда враг целится при выстреле (shooter). */
+  aimDx: number;
+  aimDy: number;
   /** Уникальный id — для отладки и дедупликации. */
   uid: number;
 }
@@ -62,7 +65,13 @@ export class Enemy {
       chargeActive: 0,
       chargeDx: 0,
       chargeDy: 0,
-      shootTimer: scene.time.now + 1500 + Math.random() * 1500,
+      // Задержка до первого выстрела — ОТНОСИТЕЛЬНАЯ (в миллисекундах
+      // от текущего момента). Если прибавить scene.time.now, таймер
+      // окажется абсолютным отсчётом и первый же враг, спавнённый
+      // позже, не выстрелит никогда.
+      shootTimer: 1200 + Math.random() * 1200,
+      aimDx: 0,
+      aimDy: 1,
       uid: UID++,
     };
   }
@@ -136,6 +145,17 @@ export class Enemy {
         const dir = dist > desired ? 1 : -0.4;
         s.sprite.x += (dx / dist) * speed * dir * (dt / 1000);
         s.sprite.y += (dy / dist) * speed * dir * (dt / 1000);
+        // Целится в игрока: излучает страницу в его сторону.
+        s.aimDx = dx / dist;
+        s.aimDy = dy / dist;
+        break;
+      }
+      case 'tank': {
+        // Медленный тяжёлый: подходит вплотную.
+        s.sprite.x += (dx / dist) * speed * (dt / 1000);
+        s.sprite.y += (dy / dist) * speed * (dt / 1000);
+        s.aimDx = dx / dist;
+        s.aimDy = dy / dist;
         break;
       }
       default: {

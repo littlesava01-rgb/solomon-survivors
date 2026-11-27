@@ -9,7 +9,9 @@
  */
 import Phaser from 'phaser';
 import { CAMERA, PALETTE, PLAYER, RUN, WORLD, isMobile } from '../config/gameConfig';
+import { ENEMIES, type BossDef } from '../data/enemies';
 import { Enemy } from '../entities/Enemy';
+import { EnemyProjectile } from '../entities/EnemyProjectile';
 import { Projectile } from '../entities/Projectile';
 import { XPOrb } from '../entities/XPOrb';
 import { SpawnManager } from '../managers/SpawnManager';
@@ -45,6 +47,7 @@ export class GameScene extends Phaser.Scene {
 
   private readonly enemies: Enemy[] = [];
   private readonly projectiles: Projectile[] = [];
+  private readonly enemyProjectiles: EnemyProjectile[] = [];
   private readonly orbs: XPOrb[] = [];
   private readonly grid = new SpatialGrid<Enemy>(160);
 
@@ -69,6 +72,10 @@ export class GameScene extends Phaser.Scene {
   private hurtFlash = 0;
   /** Накопленный дробный регенерационный урон. */
   private regenAccumulator = 0;
+  /** Сколько выстрелов сделали враги за забег — для баланса и тестов. */
+  enemyShotsFired = 0;
+  /** Сколько зачёток собрано — для баланса и тестов. */
+  orbsCollected = 0;
 
   // Джойстик (мобильные).
   private stickCenter = { x: 0, y: 0 };
@@ -242,6 +249,7 @@ export class GameScene extends Phaser.Scene {
     this.updateEnemies(dt);
     this.updateWeapons(dt);
     this.updateProjectiles(dt);
+    this.updateEnemyProjectiles(dt);
     this.updateOrbs(dt);
     this.updateRegen(dt);
     this.updateHud();
@@ -281,7 +289,7 @@ export class GameScene extends Phaser.Scene {
     if (len > 0) {
       vx /= len;
       vy /= len;
-      const speed = PLAYER.speed * this.stats.speedMultiplier;
+      const speed = PLAYER.speed * this.stats.speedMultiplier * this.effects.slowAt(this.player.x, this.player.y);
       this.player.x += vx * speed * (dt / 1000);
       this.player.y += vy * speed * (dt / 1000);
       const bob = Math.sin(this.elapsedMs / 120) * 0.02;
@@ -300,6 +308,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateSpawning(dt: number): void {
+    // Боссы появляются по расписанию, а не по общему таймеру.
+    const boss = this.spawner.claimBoss(this.elapsedMs);
+    if (boss) {
+      const angle = Math.random() * Math.PI * 2;
+      this.spawnBoss(boss, this.player.x + Math.cos(angle) * 520, this.player.y + Math.sin(angle) * 520);
+      return;
+    }
+
     const decision = this.spawner.next(
       this.elapsedMs,
       this.player.x,
@@ -318,6 +334,65 @@ export class GameScene extends Phaser.Scene {
       decision.speedMultiplier
     );
     this.enemies.push(enemy);
+  }
+
+  /** Спавн босса с эффектом появления. */
+  private spawnBoss(boss: BossDef, x: number, y: number): void {
+    const enemy = new Enemy(this, boss, x, y, 1, 1);
+    this.enemies.push(enemy);
+    // Круг-предупреждение на месте появления.
+    const ring = this.add.graphics().setDepth(3);
+    ring.lineStyle(4, 0xf97316, 1);
+    ring.strokeCircle(0, 0, 90);
+    ring.setPosition(x, y);
+    this.tweens.add({
+      targets: ring,
+      scale: 1.6,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => ring.destroy(),
+    });
+
+    // Текст с именем босса.
+    const label = this.add
+      .text(x, y - 110, boss.name, {
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '22px',
+        color: '#f97316',
+        stroke: '#7c2d12',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setDepth(11);
+    this.tweens.add({
+      targets: label,
+      y: y - 130,
+      alpha: 0,
+      delay: 1200,
+      duration: 900,
+      onComplete: () => label.destroy(),
+    });
+  }
+
+  /**
+   * Спавнит врага по id в заданной точке.
+   *
+   * Публичный метод: нужен для боссов (по расписанию) и для тестов.
+   */
+  spawnEnemy(id: string, x: number, y: number): void {
+    const def = ENEMIES.find((e) => e.id === id);
+    if (!def) return;
+    const decision = this.spawner.spawnSpecific(def, x, y);
+    this.enemies.push(
+      new Enemy(
+        this,
+        decision.def,
+        decision.x,
+        decision.y,
+        decision.hpMultiplier,
+        decision.speedMultiplier
+      )
+    );
   }
 
   private updateEnemies(dt: number): void {
@@ -341,6 +416,144 @@ export class GameScene extends Phaser.Scene {
         this.damagePlayer(enemy.state.def.damage);
       }
     }
+
+    this.updateEnemyShooting(dt);
+  }
+
+  /**
+   * Враги-стрелки и тяжёлые атакуют игрока.
+   *
+   * Линейка бьёт мгновенной чертой через всю арену (это её характер),
+   * дневник — страницей, учебник — веером страниц.
+   */
+  private updateEnemyShooting(dt: number): void {
+    // Собираем убитых отдельно: массив нельзя менять во время обхода.
+    const doomed: Enemy[] = [];
+
+    for (const enemy of this.enemies) {
+      const kind = enemy.state.def.kind;
+      if (kind !== 'shooter' && kind !== 'tank') continue;
+
+      const isTank = kind === 'tank';
+      const isRuler = enemy.state.def.id === 'ruler';
+
+      // Учебник стреляет реже и веером, остальные — точно в цель.
+      const cooldown = isTank ? 3200 : 2200;
+      const count = isTank ? 3 : 1;
+      const damage = isTank
+        ? Math.round(enemy.state.def.damage * 0.6)
+        : Math.round(enemy.state.def.damage * 0.5);
+
+      enemy.state.shootTimer -= dt;
+      if (enemy.state.shootTimer > 0) continue;
+      enemy.state.shootTimer = cooldown + Math.random() * 800;
+
+      // Стреляет только вблизи — иначе бессмысленно.
+      const dist = Math.hypot(enemy.x - this.player.x, enemy.y - this.player.y);
+      if (dist > 520) continue;
+
+      const angle = Math.atan2(enemy.state.aimDy, enemy.state.aimDx);
+
+      if (isRuler) {
+        // Линейка: мгновенная черта через всех на линии.
+        this.enemyShotsFired += 1;
+        doomed.push(...this.fireRulerBeam(enemy.x, enemy.y, angle, damage));
+        continue;
+      }
+
+      this.enemyShotsFired += count;
+      for (let i = 0; i < count; i++) {
+        const spread = count > 1 ? (i - (count - 1) / 2) * 0.35 : 0;
+        const a = angle + spread;
+        this.enemyProjectiles.push(
+          new EnemyProjectile(
+            this,
+            enemy.x,
+            enemy.y,
+            'proj-page',
+            Math.cos(a),
+            Math.sin(a),
+            damage,
+            isTank ? 150 : 200
+          )
+        );
+      }
+    }
+
+    // Убираем убитых из чертой.
+    for (const enemy of doomed) {
+      const idx = this.enemies.indexOf(enemy);
+      if (idx < 0) continue;
+      this.onEnemyKilled(enemy);
+      enemy.destroy();
+      this.enemies.splice(idx, 1);
+    }
+  }
+
+  /**
+   * Черта линейки: бьёт всех врагов, попавших на линию.
+   * Возвращает список убитых — массив врагов трогает вызывающий код.
+   */
+  private fireRulerBeam(
+    x: number,
+    y: number,
+    angle: number,
+    damage: number
+  ): Enemy[] {
+    const dirX = Math.cos(angle);
+    const dirY = Math.sin(angle);
+    const length = 900;
+    const halfWidth = 26;
+    const killed: Enemy[] = [];
+
+    // Показываем саму черту.
+    const beam = this.add.graphics().setDepth(9);
+    beam.lineStyle(6, 0xfde68a, 0.95);
+    beam.lineBetween(x, y, x + dirX * length, y + dirY * length);
+    this.tweens.add({
+      targets: beam,
+      alpha: 0,
+      duration: 220,
+      onComplete: () => beam.destroy(),
+    });
+
+    for (const enemy of this.enemies) {
+      if (enemy.isDead) continue;
+      // Расстояние от врага до прямой.
+      const rx = enemy.x - x;
+      const ry = enemy.y - y;
+      const along = rx * dirX + ry * dirY;
+      if (along < 0 || along > length) continue;
+      const perp = Math.abs(rx * dirY - ry * dirX);
+      if (perp > halfWidth + enemy.radius) continue;
+
+      if (enemy.takeDamage(damage)) {
+        killed.push(enemy);
+      }
+    }
+    return killed;
+  }
+
+  /** Движение снарядов врага и попадания по игроку. */
+  private updateEnemyProjectiles(dt: number): void {
+    for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
+      const p = this.enemyProjectiles[i];
+      p.update(dt);
+
+      const dist = Math.hypot(p.x - this.player.x, p.y - this.player.y);
+      if (dist < p.radius + 16) {
+        this.damagePlayer(p.damage);
+        p.destroy();
+        this.enemyProjectiles.splice(i, 1);
+        continue;
+      }
+
+      // Улетел за пределы мира или протух.
+      if (p.age > 4000 || p.x < 0 || p.y < 0 || p.x > WORLD.width || p.y > WORLD.height) {
+        p.destroy();
+        this.enemyProjectiles.splice(i, 1);
+      }
+    }
   }
 
   private onEnemyKilled(enemy: Enemy): void {
@@ -348,6 +561,11 @@ export class GameScene extends Phaser.Scene {
 
     // Зачётка выпадает из врага.
     this.orbs.push(new XPOrb(this, enemy.x, enemy.y, enemy.state.def.xp));
+
+    // Ластик при смерти делится на два поменьше.
+    if (enemy.state.def.kind === 'splitter') {
+      this.spawnSplitter(enemy);
+    }
 
     // Рюкзак роняет сумку и даёт немного HP.
     if (enemy.state.def.kind === 'dropper') {
@@ -363,6 +581,11 @@ export class GameScene extends Phaser.Scene {
       this.healPlayer(15);
     }
 
+    // Краска оставляет лужу, которая замедляет.
+    if (enemy.state.def.kind === 'swarm' && enemy.state.def.id === 'ink') {
+      this.effects.addZone('wpn-ink-splat', enemy.x, enemy.y, 55, 0, 6000);
+    }
+
     // Вспышка попадания.
     const flash = this.add.image(enemy.x, enemy.y, 'fx-hit-flash').setDepth(7);
     this.tweens.add({
@@ -372,6 +595,23 @@ export class GameScene extends Phaser.Scene {
       duration: 220,
       onComplete: () => flash.destroy(),
     });
+  }
+
+  /** Ластик делится на два меньших. */
+  private spawnSplitter(enemy: Enemy): void {
+    const def = enemy.state.def;
+    for (let i = 0; i < 2; i++) {
+      const angle = (Math.PI * 2 * i) / 2 + Math.random();
+      const child = new Enemy(
+        this,
+        { ...def, hp: 12, speed: def.speed * 1.25, xp: 1, scale: 0.7 },
+        enemy.x + Math.cos(angle) * 20,
+        enemy.y + Math.sin(angle) * 20,
+        1,
+        1
+      );
+      this.enemies.push(child);
+    }
   }
 
   private updateWeapons(dt: number): void {
@@ -482,6 +722,7 @@ export class GameScene extends Phaser.Scene {
       const dist = Math.hypot(orb.x - this.player.x, orb.y - this.player.y);
       if (dist < pickupRange) {
         const leveled = this.upgrades.addXp(orb.value);
+        this.orbsCollected += 1;
         orb.destroy();
         this.orbs.splice(i, 1);
         if (leveled) this.showLevelUp();

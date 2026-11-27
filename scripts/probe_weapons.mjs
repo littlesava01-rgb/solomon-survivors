@@ -5,7 +5,7 @@ import { chromium } from '@playwright/test';
  * Запуск: node scripts/probe_weapons.mjs
  */
 
-const URL = process.env.URL ?? 'http://127.0.0.1:4175/';
+const URL = process.env.URL ?? 'http://127.0.0.1:4176/';
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1024, height: 640 } });

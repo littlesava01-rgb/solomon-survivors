@@ -5,7 +5,7 @@ import { chromium } from '@playwright/test';
  * за фиксированное время. Запуск: node scripts/probe_combat.mjs
  */
 
-const URL = process.env.URL ?? 'http://127.0.0.1:4175/';
+const URL = process.env.URL ?? 'http://127.0.0.1:4176/';
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1024, height: 640 } });
@@ -50,13 +50,21 @@ const read = () =>
       projectiles: proj.length,
       orbs: orbs.length,
       hp: s.hp,
+      xp: s.upgrades?.xp ?? 0,
+      level: s.upgrades?.level ?? 0,
+      activeScene: g.scene.getScenes(true).map(x=>x.scene.key).join(','),
       hud,
     };
   });
 
-for (let i = 0; i <= 6; i++) {
-  console.log(`t=${i * 3}s`, JSON.stringify(await read()));
-  await page.waitForTimeout(3000);
+const keys = ['KeyD', 'KeyS', 'KeyA', 'KeyW'];
+for (let i = 0; i <= 8; i++) {
+  console.log(`t=${i * 2}s`, JSON.stringify(await read()));
+  const key = keys[i % keys.length];
+  await page.keyboard.down(key);
+  await page.waitForTimeout(700);
+  await page.keyboard.up(key);
+  await page.waitForTimeout(1300);
 }
 
 await browser.close();

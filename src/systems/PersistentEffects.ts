@@ -91,6 +91,22 @@ export class PersistentEffects {
     });
   }
 
+  /**
+   * Замедление в точке: лужи краски тормозят того, кто по ним идёт.
+   * Возвращает коэффициент скорости (1 — нет замедления).
+   */
+  slowAt(x: number, y: number): number {
+    let factor = 1;
+    for (const zone of this.zones) {
+      if (zone.damage > 0) continue; // зона с уроном не замедляет
+      const d = Math.hypot(x - zone.x, y - zone.y);
+      if (d <= zone.radius) {
+        factor = Math.min(factor, 0.55);
+      }
+    }
+    return factor;
+  }
+
   /** Убирает все эффекты (перезапуск забега). */
   clear(): void {
     for (const o of this.orbits) o.sprite.destroy();

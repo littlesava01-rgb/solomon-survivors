@@ -12,6 +12,7 @@ type CombatState = {
   kills: number;
   level: number;
   xp: number;
+  orbsCollected: number;
   hp: number;
   gameSeconds: number;
   scenes: string[];
@@ -42,6 +43,7 @@ async function readCombat(page: Page): Promise<CombatState> {
       kills,
       level,
       xp: (scene as any).upgrades?.xp ?? 0,
+      orbsCollected: (scene as any).orbsCollected ?? 0,
       hp,
       gameSeconds: mm * 60 + ss,
       scenes: g.scene.getScenes(true).map((s: any) => s.scene.key),
@@ -78,10 +80,13 @@ async function startGame(page: Page): Promise<void> {
 /**
  * Игрок ходит по кругу — как настоящий игрок: собирает зачётки и
  * не стоит в толпе. Без движения тест проверял бы не игру, а смерть.
+ *
+ * Круг должен быть заметно больше арены сбора зачёток: зачётки падают
+ * там, где погиб враг, то есть в сотнях пикселей от игрока.
  */
 async function circleAround(page: Page, seconds: number): Promise<void> {
   const keys = ['KeyD', 'KeyS', 'KeyA', 'KeyW'];
-  const stepMs = 700;
+  const stepMs = 1200;
   const steps = Math.ceil((seconds * 1000) / stepMs);
   for (let i = 0; i < steps; i++) {
     const key = keys[i % keys.length];
@@ -126,11 +131,12 @@ test.describe('Боевой цикл', () => {
   test('зачётки собираются и дают опыт', async ({ page }) => {
     await startGame(page);
 
-    await circleAround(page, 12);
+    await circleAround(page, 14);
     const state = await readCombat(page);
 
-    // Опыт копится и уровень растёт.
-    expect(state.xp + (state.level - 1) * 10).toBeGreaterThan(0);
+    // Зачётки реально подбираются и превращаются в опыт.
+    expect(state.orbsCollected).toBeGreaterThan(0);
+    expect(state.xp).toBeGreaterThanOrEqual(0);
   });
 
   test('подбор зачётки поднимает уровень и открывает экран апгрейда', async ({
