@@ -1,0 +1,1 @@
+{"root":["./src/main.ts","./src/assets/icons.ts","./src/config/gameconfig.ts","./src/scenes/bootscene.ts","./src/scenes/gamescene.ts","./src/scenes/menuscene.ts","./tests/config.test.ts","./tests/icons.test.ts","./tests/e2e/game.spec.ts","./vite.config.ts"],"version":"5.9.3"}

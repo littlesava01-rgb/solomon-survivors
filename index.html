@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#f97316" />
+    <meta
+      name="description"
+      content="«Белка Соломон» — игра в жанре Vampire Survivors: Соломон отбивается от школьной атрибутики."
+    />
+    <title>Белка Соломон</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #1e293b;
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color: #fff7ed;
+      }
+      #game {
+        width: 100%;
+        height: 100%;
+        touch-action: none;
+      }
+      #game canvas {
+        display: block;
+      }
+      /* Экран загрузки до запуска Phaser */
+      #boot {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        background: #1e293b;
+        transition: opacity 0.3s ease;
+      }
+      #boot.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #boot h1 {
+        font-size: 26px;
+        letter-spacing: 0.04em;
+        color: #f97316;
+        text-shadow: 0 2px 0 #7c2d12;
+      }
+      #boot p {
+        font-size: 14px;
+        opacity: 0.75;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="boot">
+      <h1>Белка Соломон</h1>
+      <p>Загрузка…</p>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

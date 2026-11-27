@@ -1,0 +1,25 @@
+{
+  "name": "solomon-survivors",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "«Белка Соломон» — игра в жанре Vampire Survivors: Соломон отбивается от школьной атрибутики.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -b --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "typescript": "~5.9.3",
+    "vite": "^8.4.0",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.1.2"
+  }
+}

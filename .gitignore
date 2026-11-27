@@ -1,0 +1,29 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Сборка и кэш
+.tsbuildinfo
+.vite/
+coverage/
+test-results/
+playwright-report/
+
+# Логи
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE / ОС
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# Секреты
+.env
+.env.*
+!.env.example
