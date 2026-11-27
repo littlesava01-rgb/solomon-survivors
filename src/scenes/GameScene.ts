@@ -8,7 +8,15 @@
  * Оптимизации: пул снарядов, пространственная сетка для коллизий.
  */
 import Phaser from 'phaser';
-import { CAMERA, PALETTE, PLAYER, RUN, WORLD, isMobile } from '../config/gameConfig';
+import {
+  ARENA_SPAWN,
+  CAMERA,
+  PALETTE,
+  PLAYER,
+  RUN,
+  WORLD,
+  isMobile,
+} from '../config/gameConfig';
 import { ENEMIES, type BossDef } from '../data/enemies';
 import { Enemy } from '../entities/Enemy';
 import { EnemyProjectile } from '../entities/EnemyProjectile';
@@ -17,6 +25,7 @@ import { XPOrb } from '../entities/XPOrb';
 import { SpawnManager } from '../managers/SpawnManager';
 import { WeaponManager } from '../managers/WeaponManager';
 import { SpatialGrid } from '../systems/SpatialGrid';
+import { ArenaRenderer, type ArenaVisual } from '../systems/ArenaRenderer';
 import { PersistentEffects } from '../systems/PersistentEffects';
 import { UpgradeSystem, type UpgradeOption } from '../systems/UpgradeSystem';
 
@@ -74,6 +83,8 @@ export class GameScene extends Phaser.Scene {
   private regenAccumulator = 0;
   /** Сколько выстрелов сделали враги за забег — для баланса и тестов. */
   enemyShotsFired = 0;
+  /** Сколько врагов задело чертой линейки — для тестов. */
+  beamHits = 0;
   /** Сколько зачёток собрано — для баланса и тестов. */
   orbsCollected = 0;
 
@@ -122,10 +133,16 @@ export class GameScene extends Phaser.Scene {
       regenPerSecond: 0,
     };
 
-    this.drawArena();
+    this.arena = new ArenaRenderer(this).draw();
 
+    // Слой теней — под врагами, но над полом и декором.
+    this.shadowLayer = this.add.graphics().setDepth(-80);
+
+    // Старт — не в центре мира: центр арены попадает точно на стык
+    // биомов, и игрок сразу оказывается на шве. Берём середину
+    // «уличной» зоны (см. src/data/biomeLayout.json).
     this.player = this.add
-      .image(WORLD.width / 2, WORLD.height / 2, 'solomon-idle')
+      .image(ARENA_SPAWN.x, ARENA_SPAWN.y, 'solomon-idle')
       .setScale(PLAYER.spriteScale)
       .setDepth(10);
     this.physics.add.existing(this.player);
@@ -144,20 +161,21 @@ export class GameScene extends Phaser.Scene {
     this.buildHud();
 
     this.input.keyboard!.on('keydown-ESC', () => this.scene.start('Menu'));
+
+    // Арена — это сотни объектов; без уборки они копятся между забегами.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.shutdownArena());
   }
 
-  /** Заливка арены с сеткой (на этапе 4 заменится на тайлы биомов). */
-  private drawArena(): void {
-    const grid = this.add.graphics();
-    grid.fillStyle(0x152238, 1);
-    grid.fillRect(0, 0, WORLD.width, WORLD.height);
-    grid.lineStyle(1, 0x1e3a5f, 0.6);
-    for (let x = 0; x <= WORLD.width; x += WORLD.tileSize) {
-      grid.lineBetween(x, 0, x, WORLD.height);
-    }
-    for (let y = 0; y <= WORLD.height; y += WORLD.tileSize) {
-      grid.lineBetween(0, y, WORLD.width, y);
-    }
+  /** Отрисовка арены: пол по зонам, декор, свет. */
+  private arena?: ArenaVisual;
+
+  /** Общий слой теней под врагами и игроком. */
+  private shadowLayer?: Phaser.GameObjects.Graphics;
+
+  /** Уборка арены при выходе из сцены. */
+  private shutdownArena(): void {
+    this.arena?.destroy();
+    this.arena = undefined;
   }
 
   private buildHud(): void {
@@ -316,24 +334,27 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    const decision = this.spawner.next(
+    const wave = this.spawner.next(
       this.elapsedMs,
       this.player.x,
       this.player.y,
       this.enemies.length,
       dt
     );
-    if (!decision) return;
+    if (!wave) return;
 
-    const enemy = new Enemy(
-      this,
-      decision.def,
-      decision.x,
-      decision.y,
-      decision.hpMultiplier,
-      decision.speedMultiplier
-    );
-    this.enemies.push(enemy);
+    // Пачка врагов: все сразу, но вытянутая в глубину.
+    for (const decision of wave.decisions) {
+      const enemy = new Enemy(
+        this,
+        decision.def,
+        decision.x,
+        decision.y,
+        decision.hpMultiplier,
+        decision.speedMultiplier
+      );
+      this.enemies.push(enemy);
+    }
   }
 
   /** Спавн босса с эффектом появления. */
@@ -418,6 +439,32 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.updateEnemyShooting(dt);
+    this.drawEnemyShadows();
+  }
+
+  /**
+   * Тени под врагами и под игроком.
+   *
+   * На снежном полу белый мел и тетрадь сливаются с фоном: контур
+   * теряется, и в толпе не разобрать, кто где. Тень — самый дешёвый
+   * способ вернуть силуэт: одна общая Graphics на всех, перерисовывается
+   * раз в кадр.
+   */
+  private drawEnemyShadows(): void {
+    if (!this.shadowLayer) return;
+    const g = this.shadowLayer;
+    g.clear();
+    g.fillStyle(0x0b1220, 0.3);
+
+    for (const enemy of this.enemies) {
+      const r = enemy.state.def.radius;
+      // Тень чуть ниже центра — как будто светит сверху-слева.
+      g.fillEllipse(enemy.x + 3, enemy.y + r * 0.35, r * 2.1, r * 1.25);
+    }
+
+    // Игрок — тень поярче, чтобы его всегда было видно.
+    g.fillStyle(0x0b1220, 0.4);
+    g.fillEllipse(this.player.x + 4, this.player.y + 22, 56, 30);
   }
 
   /**
@@ -526,6 +573,10 @@ export class GameScene extends Phaser.Scene {
       if (along < 0 || along > length) continue;
       const perp = Math.abs(rx * dirY - ry * dirX);
       if (perp > halfWidth + enemy.radius) continue;
+
+      // Считаем попадания — по ним тест проверяет, что черта бьёт
+      // по линии, не гадая, доживёт ли цель до конца теста.
+      this.beamHits += 1;
 
       if (enemy.takeDamage(damage)) {
         killed.push(enemy);

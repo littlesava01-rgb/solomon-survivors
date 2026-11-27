@@ -15,6 +15,13 @@ export interface SpawnDecision {
   speedMultiplier: number;
 }
 
+/** Решение о спавне пачки: сколько врагов и где они появляются. */
+export interface SpawnWave {
+  decisions: SpawnDecision[];
+  /** Сколько врагов в пачке (может быть больше решений — упёрлись в потолок). */
+  count: number;
+}
+
 export class SpawnManager {
   /** Таймер до следующей волны, в мс. */
   private timer = 0;
@@ -48,6 +55,17 @@ export class SpawnManager {
   }
 
   /**
+   * Размер пачки на текущий момент: с началом забега поодиночке,
+   * к середине — по 3-4 врага за раз.
+   */
+  packSizeFor(elapsedMs: number): number {
+    if (elapsedMs < SPAWN.packRampStartMs) return SPAWN.packMin;
+    const minutes = (elapsedMs - SPAWN.packRampStartMs) / 60000;
+    const size = SPAWN.packMin + minutes * SPAWN.packRampPerMinute;
+    return Math.min(SPAWN.packMax, Math.round(size));
+  }
+
+  /**
    * Следующее решение о спавне.
    *
    * Возвращает null, если пора подождать. Боссы имеют приоритет: если
@@ -59,12 +77,15 @@ export class SpawnManager {
     playerY: number,
     activeCount: number,
     dt: number
-  ): SpawnDecision | null {
+  ): SpawnWave | null {
     const boss = dueBoss(elapsedMs, this.spawnedBosses);
     if (boss) {
       this.spawnedBosses.add(boss.id);
       this.totalSpawned += 1;
-      return this.decision(boss, playerX, playerY, elapsedMs);
+      return {
+        decisions: [this.decision(boss, playerX, playerY, elapsedMs)],
+        count: 1,
+      };
     }
 
     if (activeCount >= SPAWN.maxEnemies) return null;
@@ -78,9 +99,19 @@ export class SpawnManager {
     const pool = availableEnemies(elapsedMs);
     if (pool.length === 0) return null;
 
-    const def = this.pickWeighted(pool);
-    this.totalSpawned += 1;
-    return this.decision(def, playerX, playerY, elapsedMs);
+    // Пачка: враги приходят группой с одного направления, а не по одному
+    // со всех сторон — так напор читается как волна, а не как капель.
+    const wanted = this.packSizeFor(elapsedMs);
+    const room = SPAWN.maxEnemies - activeCount;
+    const count = Math.max(1, Math.min(wanted, room));
+
+    const decisions: SpawnDecision[] = [];
+    for (let i = 0; i < count; i++) {
+      const def = this.pickWeighted(pool);
+      this.totalSpawned += 1;
+      decisions.push(this.decision(def, playerX, playerY, elapsedMs, i, count));
+    }
+    return { decisions, count };
   }
 
   /** Выбор врага по весу. */
@@ -94,15 +125,28 @@ export class SpawnManager {
     return pool[pool.length - 1];
   }
 
-  /** Позиция спавна — случайная точка на кольце за пределами экрана. */
+  /**
+   * Позиция спавна — случайная точка на кольце за пределами экрана.
+   *
+   * Внутри пачки все враги приходят примерно оттуда же (разброс по
+   * углу), иначе группа расползается и перестаёт читаться как волна.
+   */
   private decision(
     def: EnemyDef,
     playerX: number,
     playerY: number,
-    elapsedMs: number
+    elapsedMs: number,
+    index = 0,
+    packSize = 1
   ): SpawnDecision {
-    const angle = Math.random() * Math.PI * 2;
-    const radius = SPAWN.radius + Math.random() * 120;
+    // Общее направление на всю пачку, чтобы она шла одной волной.
+    const baseAngle = Math.random() * Math.PI * 2;
+    const spread = index === 0 ? 0 : (Math.random() - 0.5) * 0.5;
+    const angle = baseAngle + spread;
+    // Пачка вытянута в глубину: первый враг ближе, последние дальше —
+    // волна доезжает целиком, а не появляется разом стеной.
+    const depth = packSize > 1 ? index * 34 : 0;
+    const radius = SPAWN.radius + depth + Math.random() * 120;
     return {
       def,
       x: playerX + Math.cos(angle) * radius,

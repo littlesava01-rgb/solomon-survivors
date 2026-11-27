@@ -128,6 +128,28 @@ test.describe('Боевой цикл', () => {
     expect(state.scenes).toContain('Game');
   });
 
+  test('игрок выживает против плотной толпы', async ({ page }) => {
+    await startGame(page);
+
+    // Толпа вокруг игрока. 12 тетрадей — это уровень середины забега,
+    // где спавн уже идёт пачками. Проверяем, что за 8 секунд в такой
+    // обстановке игрок не погибает: иначе напор сделан неиграбельным.
+    await page.evaluate(() => {
+      const s = (window as any).__game.scene.getScene('Game');
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        s.spawnEnemy('notebook', s.player.x + Math.cos(a) * 220,
+                     s.player.y + Math.sin(a) * 220);
+      }
+    });
+
+    await circleAround(page, 8);
+    const state = await readCombat(page);
+
+    expect(state.hp).toBeGreaterThan(0);
+    expect(state.scenes).toContain('Game');
+  });
+
   test('зачётки собираются и дают опыт', async ({ page }) => {
     await startGame(page);
 

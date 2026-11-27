@@ -2,11 +2,14 @@
  * Загрузка ресурсов и подготовка текстур.
  *
  * Грузим: 110 иконок интерфейса, 3 позы Соломона, спрайты врагов/оружия
- * (art/sprites/) и один фон-панорама для меню.
+ * (art/sprites/), текстуры пола и декор арены (src/assets/floors,
+ * src/assets/props) и один фон-панорама для меню.
  */
 import Phaser from 'phaser';
 import { ICONS } from '../assets/icons';
 import { SPRITES } from '../assets/sprites';
+import { FLOORS, PROPS } from '../assets/arena';
+import { BLENDS } from '../assets/blends';
 import poseWink from '../../Assets/solomon/pose-wink.png';
 import poseHello from '../../Assets/solomon/pose-hello.png';
 import poseIdle from '../../Assets/solomon/pose-idle.png';
@@ -27,6 +30,15 @@ export class BootScene extends Phaser.Scene {
       this.load.image(name, url);
     }
     for (const [name, url] of Object.entries(SPRITES)) {
+      this.load.image(name, url);
+    }
+    for (const [name, url] of Object.entries(FLOORS)) {
+      this.load.image(name, url);
+    }
+    for (const [name, url] of Object.entries(PROPS)) {
+      this.load.image(name, url);
+    }
+    for (const [name, url] of Object.entries(BLENDS)) {
       this.load.image(name, url);
     }
   }

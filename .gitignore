@@ -32,3 +32,7 @@ Thumbs.db
 
 # Промежуточные артефакты генерации (исходные сетки можно не хранить)
 art/preview_all.png
+art/floors/*.png
+art/props/*.png
+__pycache__/
+*.pyc
