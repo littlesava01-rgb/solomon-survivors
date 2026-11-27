@@ -11,7 +11,7 @@ import { ICONS } from '../assets/icons';
 import poseWink from '../../Assets/solomon/pose-wink.png';
 import poseHello from '../../Assets/solomon/pose-hello.png';
 import poseIdle from '../../Assets/solomon/pose-idle.png';
-import bgUniversity from '../assets/bg-university.png';
+import bgUniversity from '../assets/bg-university.webp';
 
 export class BootScene extends Phaser.Scene {
   constructor() {

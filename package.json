@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "deploy": "bash scripts/deploy_pages.sh"
   },
   "dependencies": {
     "phaser": "3.90.0"
