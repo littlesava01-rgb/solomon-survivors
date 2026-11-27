@@ -57,18 +57,26 @@ test.describe('Опубликованная версия', () => {
       { timeout: 15_000 }
     );
 
-    const state = await page.evaluate(() => {
+    // Точка старта берём из самой игры, а не константой в тесте:
+    // она менялась (центр мира попадал на стык биомов).
+    const spawn = await page.evaluate(() => {
       const g = (window as any).__game;
       const scene = g.scene.getScene('Game');
       const p = scene.children.list.find(
         (o: any) => o.texture && o.texture.key === 'solomon-idle'
       );
       const hud = scene.children.list.find((o: any) => o.type === 'Text');
-      return { x: p ? Math.round(p.x) : null, hud: hud ? hud.text : '' };
+      return {
+        x: p ? Math.round(p.x) : null,
+        y: p ? Math.round(p.y) : null,
+        hud: hud ? hud.text : '',
+      };
     });
 
-    expect(state.x).toBe(2000);
-    expect(state.hud).toContain('До утра');
+    // Игрок стартует в «уличной» зоне — не в центре мира и не на шве.
+    expect(spawn.x).toBe(667);
+    expect(spawn.y).toBe(1000);
+    expect(spawn.hud).toContain('До утра');
   });
 
   test('манифест PWA отдаётся и регистрируется service worker', async ({ page }) => {
