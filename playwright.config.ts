@@ -14,7 +14,9 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   reporter: [['list']],
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    // Порт 4175 — отдельный от dev-превью на 4173, чтобы тесты
+    // не падали из-за запущенного сервера разработки.
+    baseURL: 'http://127.0.0.1:4175',
     trace: 'off',
   },
   projects: [
@@ -30,8 +32,8 @@ export default defineConfig({
   webServer: {
     // Локальная сборка с BASE_PATH="/" — отдельная папка dist-pages
     // используется только для публикации на GitHub Pages.
-    command: 'npm run build && npx vite preview --port 4173 --host 127.0.0.1',
-    url: 'http://127.0.0.1:4173',
+    command: 'npm run build && npx vite preview --port 4175 --host 127.0.0.1',
+    url: 'http://127.0.0.1:4175',
     reuseExistingServer: false,
     timeout: 180_000,
   },
