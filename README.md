@@ -10,7 +10,7 @@
 
 ## Играть
 
-**Онлайн:** <https://youngkid228.github.io/solomon-survivors/>
+**Онлайн:** <https://littlesava01-rgb.github.io/solomon-survivors/>
 
 **Локально:**
 
@@ -57,6 +57,16 @@ scripts/               — подготовка спрайтов, симуляц
 Сейчас в репозитории — **рабочий прототип**: меню, арена, движение Соломона,
 камера, HUD, экранный джойстик. Боевая система (враги, оружие, апгрейды,
 боссы, мета-прогрессия) — по этапам 2–5 в плане игры.
+
+## Команды
+
+```bash
+npm run dev        # дев-сервер
+npm run build      # production-сборка
+npm test           # юнит-тесты (vitest)
+npm run test:e2e   # e2e-тесты (playwright, desktop + mobile)
+npm run deploy     # собрать и опубликовать на GitHub Pages
+```
 
 ## Лицензия
 
