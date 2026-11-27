@@ -28,9 +28,11 @@ export default defineConfig({
     },
   ],
   webServer: {
+    // Локальная сборка с BASE_PATH="/" — отдельная папка dist-pages
+    // используется только для публикации на GitHub Pages.
     command: 'npm run build && npx vite preview --port 4173 --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 180_000,
   },
 });

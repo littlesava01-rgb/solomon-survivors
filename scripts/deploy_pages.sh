@@ -23,7 +23,9 @@ BRANCH="gh-pages"
 WORKTREE=".deploy_worktree"
 
 echo "==> Сборка (BASE_PATH=/$NAME/)"
-BASE_PATH="/$NAME/" npx vite build
+# Собираем в отдельную папку: локальный dist/ остаётся с BASE_PATH="/"
+# и пригоден для npm run preview и e2e-тестов.
+BASE_PATH="/$NAME/" OUT_DIR="dist-pages" npx vite build
 
 echo "==> Готовим ветку $BRANCH в отдельном worktree"
 git worktree remove --force "$WORKTREE" 2>/dev/null || true
@@ -39,7 +41,7 @@ git rm -rf --cached . -q 2>/dev/null || true
 find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
 
 echo "==> Копируем сборку в корень ветки"
-cp -r ../dist/. .
+cp -r ../dist-pages/. .
 # Pages не должен отдавать папки «_» как служебные
 touch .nojekyll
 

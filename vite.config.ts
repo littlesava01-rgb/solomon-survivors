@@ -12,6 +12,13 @@ const BASE_PATH = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
   base: BASE_PATH,
+  build: {
+    // Каталог сборки можно переопределить: деплой на Pages собирает
+    // в отдельную папку, чтобы не портить локальный dist/ (в нём
+    // BASE_PATH = "/", а для Pages нужен "/<имя-репозитория>/").
+    outDir: process.env.OUT_DIR || 'dist',
+    emptyOutDir: true,
+  },
   server: {
     host: '127.0.0.1',
     port: 5173,
